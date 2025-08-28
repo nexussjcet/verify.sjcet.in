@@ -1,21 +1,24 @@
 import { Hono } from 'hono'
 import { signJWT, verifyJWT } from '../lib/jwt'
-import { generateQRCodeFromJWT, decodeJWTFromQRCode } from '../lib/qrcode'
 
-const app = new Hono()
+interface Env {
+  JWT_SECRET: string
+}
+
+const app = new Hono<{ Bindings: Env }>();
 
 // No key initialization needed - using JWT_SECRET from .env
 
 app.get('/', (c) => {
-  return c.text('Certificate Tools API - QR Code & JWT Service')
+  return c.text('Certificate Tools API - QR Code & JWT Service: https://github.com/nexussjcet/verify.sjcet.in')
 })
 
-// Route 1: Accept JSON, sign it as JWT, and return QR code
-app.post('/generate-qr', async (c) => {
+// Route 1: Accept JSON, sign it as JWT, and return the JWT
+app.post('/generate-jwt', async (c) => {
   try {
-    
+
     const body = await c.req.json()
-    
+
     if (!body || typeof body !== 'object') {
       return c.json({ error: 'Invalid JSON payload' }, 400)
     }
@@ -28,28 +31,21 @@ app.post('/generate-qr', async (c) => {
     }
 
     // Sign the JWT
-    const jwt = await signJWT(payload, undefined, {
+    const jwt = await signJWT(payload, c.env.JWT_SECRET, {
       issuer: 'cert-tools',
       expiresIn: '24h'
-    })
-
-    // Generate QR code from JWT
-    const qrCodeBase64 = await generateQRCodeFromJWT(jwt, {
-      width: 300,
-      errorCorrectionLevel: 'M'
     })
 
     return c.json({
       success: true,
       jwt,
-      qrCode: `data:image/png;base64,${qrCodeBase64}`,
       payload
     })
 
   } catch (error) {
-    console.error('Error generating QR code:', error)
+    console.error('Error generating JWT:', error)
     return c.json({
-      error: 'Failed to generate QR code',
+      error: 'Failed to generate JWT',
       message: error instanceof Error ? error.message : 'Unknown error'
     }, 500)
   }
@@ -58,15 +54,15 @@ app.post('/generate-qr', async (c) => {
 // Route 2: Accept JWT string directly (extracted from QR code), verify and return data
 app.post('/verify-jwt', async (c) => {
   try {
-    
+
     const body = await c.req.json()
-    
+
     if (!body.jwt) {
       return c.json({ error: 'No JWT provided' }, 400)
     }
 
     // Verify the JWT
-    const payload = await verifyJWT(body.jwt, undefined, {
+    const payload = await verifyJWT(body.jwt, c.env.JWT_SECRET, {
       issuer: 'cert-tools',
       algorithms: ['HS256']
     })

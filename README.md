@@ -5,7 +5,7 @@ A simple and secure API for generating QR codes from signed JWTs and verifying J
 ## Features
 
 - 🔐 **JWT Signing**: Sign JSON data with HMAC-SHA256
-- 📱 **QR Code Generation**: Create QR codes containing signed JWTs
+- 📱 **QR Code Scripts**: Local scripts for QR code generation and verification
 - ✅ **JWT Verification**: Verify and decode JWTs from QR codes
 - 🛡️ **Security**: Built-in expiration, issuer validation, and unique identifiers
 - ⚡ **Fast**: Built with Bun and Hono for optimal performance
@@ -50,16 +50,16 @@ bun run dev
 
 ## API Endpoints
 
-### 1. Generate QR Code
+### 1. Generate JWT
 
-**POST** `/generate-qr`
+**POST** `/generate-jwt`
 
-Accepts JSON data, signs it as a JWT, and returns a QR code.
+Accepts JSON data, signs it as a JWT, and returns the signed token.
 
 #### Request
 
 ```bash
-curl -X POST http://localhost:3000/generate-qr \
+curl -X POST http://localhost:3000/generate-jwt \
   -H "Content-Type: application/json" \
   -d '{
     "certificateId": "CERT-12345",
@@ -76,7 +76,6 @@ curl -X POST http://localhost:3000/generate-qr \
 {
   "success": true,
   "jwt": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "qrCode": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...",
   "payload": {
     "certificateId": "CERT-12345",
     "recipientName": "John Doe",
@@ -148,26 +147,47 @@ curl -X POST http://localhost:3000/verify-jwt \
 }
 ```
 
-## Usage Examples
+## Local Scripts
+
+This project includes local scripts for QR code operations that work with the API.
+
+### Generate QR Code Script
+
+```bash
+# Generate QR code with sample data
+bun run generate-qr
+
+# Generate QR code with custom data
+bun run generate-qr '{"certificateId":"CERT-123","recipientName":"John Doe"}'
+
+# Save QR code to file
+bun run generate-qr '{"certificateId":"CERT-123"}' qrcode.png
+```
+
+### Verify QR Code Script
+
+```bash
+# Verify JWT from command line
+bun run verify-qr "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+# Verify JWT from file
+bun run verify-qr --file jwt.txt
+```
+
+## API Usage Examples
 
 ### JavaScript/TypeScript
 
 ```typescript
-// Generate QR Code
-async function generateCertificateQR(certificateData: any) {
-  const response = await fetch('/generate-qr', {
+// Generate JWT
+async function generateJWT(certificateData: any) {
+  const response = await fetch('/generate-jwt', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(certificateData)
   });
 
   const result = await response.json();
-
-  // Display QR code
-  const img = document.createElement('img');
-  img.src = result.qrCode;
-  document.body.appendChild(img);
-
   return result.jwt;
 }
 
@@ -197,10 +217,10 @@ async function verifyCertificate(jwt: string) {
 import requests
 import json
 
-# Generate QR Code
-def generate_qr(data):
+# Generate JWT
+def generate_jwt(data):
     response = requests.post(
-        'http://localhost:3000/generate-qr',
+        'http://localhost:3000/generate-jwt',
         headers={'Content-Type': 'application/json'},
         json=data
     )
@@ -222,15 +242,23 @@ certificate_data = {
     'courseName': 'Python Programming'
 }
 
-result = generate_qr(certificate_data)
-print(f"QR Code generated: {result['success']}")
+result = generate_jwt(certificate_data)
+print(f"JWT generated: {result['success']}")
 ```
 
 ## Workflow
 
+### Option 1: Using Local Scripts (Recommended)
 1. **Create Certificate Data**: Prepare your certificate/ticket data as JSON
-2. **Generate QR Code**: Send data to `/generate-qr` endpoint
-3. **Display QR Code**: Show the returned base64 QR code image
+2. **Generate QR Code**: Use `bun run generate-qr` with your data
+3. **Display/Save QR Code**: The script will generate and save the QR code
+4. **Scan QR Code**: Use any QR scanner to extract the JWT
+5. **Verify JWT**: Use `bun run verify-qr` with the extracted JWT
+
+### Option 2: Using API Directly
+1. **Create Certificate Data**: Prepare your certificate/ticket data as JSON
+2. **Generate JWT**: Send data to `/generate-jwt` endpoint
+3. **Create QR Code**: Use any QR code library to encode the JWT
 4. **Scan QR Code**: Use any QR scanner to extract the JWT
 5. **Verify JWT**: Send extracted JWT to `/verify-jwt` for validation
 
@@ -268,7 +296,10 @@ cert-tools/
 │   └── index.ts          # Main API server
 ├── lib/
 │   ├── jwt.ts           # JWT signing and verification
-│   └── qrcode.ts        # QR code generation
+│   └── qrcode.ts        # QR code utilities (legacy)
+├── scripts/
+│   ├── generate-qr.ts   # Local QR code generation script
+│   └── verify-qr.ts     # Local QR code verification script
 ├── .env                 # Environment variables
 ├── package.json         # Dependencies
 └── README.md           # This file
@@ -277,7 +308,7 @@ cert-tools/
 ### Dependencies
 
 - **hono**: Fast web framework
-- **qrcode**: QR code generation
+- **qrcode**: QR code generation (for local scripts)
 - **@types/qrcode**: TypeScript definitions
 
 ### Contributing
