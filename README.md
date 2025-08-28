@@ -160,14 +160,14 @@ async function generateCertificateQR(certificateData: any) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(certificateData)
   });
-  
+
   const result = await response.json();
-  
+
   // Display QR code
   const img = document.createElement('img');
   img.src = result.qrCode;
   document.body.appendChild(img);
-  
+
   return result.jwt;
 }
 
@@ -178,15 +178,15 @@ async function verifyCertificate(jwt: string) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ jwt })
   });
-  
+
   const result = await response.json();
-  
+
   if (result.verified) {
     console.log('Certificate is valid:', result.payload);
   } else {
     console.log('Certificate verification failed');
   }
-  
+
   return result;
 }
 ```
@@ -301,4 +301,4 @@ For issues and questions:
 
 ---
 
-Built with ❤️ using Bun and Hono# verify.sjcet.in
+Built with ❤️ using Bun and Hono
